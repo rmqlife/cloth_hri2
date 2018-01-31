@@ -106,7 +106,7 @@ if __name__ == '__main__':
             #target_feat = feat[goal,:]
             #hist = np.array(target_feat) - np.array(hist)
             #motion = model.predict(hist.reshape((1,-1))).ravel()
-            motion = 0.3*(target_pos - pos)
+            motion = 0.3*(target_pos - current_pos)
             motion = 0.3*motion
             motion = validate_motion(motion)
             vel.data = motion
