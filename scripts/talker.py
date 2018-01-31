@@ -73,7 +73,10 @@ if __name__ == '__main__':
 	print tt_pos.shape
 	print feat.shape
 	
-	target_feat = feat[0,:]
+	rr = [0.48943184,0.1678617,0.47914139]
+    rl = [0.4918203,-0.11984081,0.47457296]
+
+	target_pos = rr + rl
 	global have_current_pos; have_current_pos = False
 	global have_im; have_im = False
 	global current_pos,im
@@ -103,7 +106,7 @@ if __name__ == '__main__':
 			#target_feat = feat[goal,:]
 			#hist = np.array(target_feat) - np.array(hist)
 			#motion = model.predict(hist.reshape((1,-1))).ravel()
-			motion = pos
+			motion = 0.3*[target - pos]
 			motion = 0.3*motion
 			motion = validate_motion(motion)
 			vel.data = motion
