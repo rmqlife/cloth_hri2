@@ -1,0 +1,2 @@
+roslaunch realsense_ros realsense_ros.launch sNum1:=611205001943
+roslaunch abb_launch yumi_ikvel_control_nogripper.launch 
