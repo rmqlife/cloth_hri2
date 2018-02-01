@@ -7,8 +7,7 @@ from sensor_msgs.msg import Image
 import numpy as np
 from cv_bridge import CvBridge
 import cv2
-import wrinkle
-import regression
+
 
 def process_pos(msg):
 	global have_current_pos; have_current_pos = True
@@ -21,10 +20,8 @@ def validate_motion(motion):
 	return motion
 
 if __name__ == '__main__':
-	data_name = 'data2.npz'
-	data = np.load(data_name)
-	pos = data['pos']
-	feat = data['feat']
+	data_name = 'robot_pos.npy'
+	pos = np.load(data_name)
 
 	init_pos = pos[1]
 	reach_init = False

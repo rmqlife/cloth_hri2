@@ -9,6 +9,38 @@ from cv_bridge import CvBridge
 import cv2
 import wrinkle2
 import regression
+import numpy as np
+import cv2
+import matplotlib.pyplot as plt
+from scipy.spatial import cKDTree
+from predict import *
+from util import *
+class Finder:
+    def __init__(self, depth_sim, pos_sim):
+        self.use_simple=True
+        self.debug=False
+        self.pos_sim = pos_sim
+        self.depth_sim = depth_sim
+        if self.use_simple:
+            self.nn = Nearest(depth_sim)
+        
+        pass
+    
+    def get_target(self, vec):
+        if self.use_simple:
+            pred, ans = nearest_predict(vec=vec
+                                      ,mat=self.depth_sim
+                                      ,pos=self.pos_sim)
+        else:
+            dist, ans = self.nn.findNeigh(depth_orig[i,:])
+            pred = pos_sim[ans]
+        if self.debug:
+            vis_depth(depth_orig[i,:])
+            vis_depth(depth_sim[ans,:])
+        
+        pred = pred.tolist()
+        pred = pred[-3:]+pred[:3]
+        return pred, self.depth_sim[ans]
 
 
 def process_depth(msg):
@@ -16,19 +48,6 @@ def process_depth(msg):
     global have_im; have_im = True
     global im; im = bridge.imgmsg_to_cv2(msg)
 
-def nearest_predict(vec,mat,pos):
-    vec = vec.astype(int)
-    mat = mat.astype(int)
-    res = np.zeros(mat.shape[0])
-    for i in range(mat.shape[0]):
-        vec2= mat[i,:]
-        dt = np.sum(abs(vec-vec2))
-        res[i]=dt
-    # find top answer's indices in mat
-    ans = np.argsort(res)[:5]
-    print ans
-    print pos.shape
-    return np.mean(pos[ans,:], axis=0)
 
 def depth_feature(im, target_size=(64,64)):
     d = cv2.resize(im, target_size)
@@ -67,16 +86,11 @@ def validate_pos(current_pos,pos):
 if __name__ == '__main__':
 
     # data_name = sys.argv[1]
-    data = np.load('data.npz')
-    tt_pos = data['pos']
-    feat = np.load('depth1.npy')
-    print tt_pos.shape
-    print feat.shape
+    depth_sim = np.load('depth_sim_bg.npy')
+    pos_sim = np.load('expert.npy')
+    finder = Finder(depth_sim, pos_sim)
     
-    rr = [0.48943184,0.1678617,0.47914139]
-    rl = [0.4918203,-0.11984081,0.47457296]
 
-    target_pos = rr + rl
     global have_current_pos; have_current_pos = False
     global have_im; have_im = False
     global current_pos,im
@@ -97,17 +111,16 @@ if __name__ == '__main__':
             have_im = False
             # have target_feat
             vec = depth_feature(im)
-            pos = nearest_predict(vec=vec, mat=feat, pos=tt_pos)
+            target_pos = finder.get_target(vec)
             print "pos"
-            print pos
+            print target_pos
             print current_pos
             #hist = wrinkle2.xhist(im)
             #goal = goals[0]
             #target_feat = feat[goal,:]
             #hist = np.array(target_feat) - np.array(hist)
             #motion = model.predict(hist.reshape((1,-1))).ravel()
-            motion = 0.3*(target_pos - current_pos)
-            motion = 0.3*motion
+            motion = target_pos - current_pos
             motion = validate_motion(motion)
             vel.data = motion
             print "motion", motion
