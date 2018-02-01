@@ -111,7 +111,7 @@ if __name__ == '__main__':
             have_im = False
             # have target_feat
             vec = depth_feature(im)
-            target_pos = finder.get_target(vec)
+            target_pos,ans = finder.get_target(vec)
             print "pos"
             print target_pos
             print current_pos
