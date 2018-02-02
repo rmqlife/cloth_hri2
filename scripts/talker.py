@@ -7,40 +7,12 @@ from sensor_msgs.msg import Image
 import numpy as np
 from cv_bridge import CvBridge
 import cv2
-import wrinkle2
-import regression
-import numpy as np
-import cv2
 import matplotlib.pyplot as plt
 from scipy.spatial import cKDTree
 from predict import *
 from util import *
-class Finder:
-    def __init__(self, depth_sim, pos_sim):
-        self.use_simple=True
-        self.debug=False
-        self.pos_sim = pos_sim
-        self.depth_sim = depth_sim
-        if self.use_simple:
-            self.nn = Nearest(depth_sim)
-        
-        pass
-    
-    def get_target(self, vec):
-        if self.use_simple:
-            pred, ans = nearest_predict(vec=vec
-                                      ,mat=self.depth_sim
-                                      ,pos=self.pos_sim)
-        else:
-            dist, ans = self.nn.findNeigh(depth_orig[i,:])
-            pred = pos_sim[ans]
-        if self.debug:
-            vis_depth(depth_orig[i,:])
-            vis_depth(depth_sim[ans,:])
-        
-        pred = pred.tolist()
-        pred = pred[-3:]+pred[:3]
-        return pred, self.depth_sim[ans]
+
+
 
 
 def process_depth(msg):
@@ -81,14 +53,57 @@ def validate_pos(current_pos,pos):
             print 'upper', upper
             return False
     return True
-    
+
+
+def closest(vec, mat,thresh):
+    res = np.zeros(mat.shape[0])
+    ans = []
+    for i in range(mat.shape[0]):
+        vec2 = mat[i,:]
+        from numpy.linalg import norm
+        dist1 = norm(vec[:3]-vec2[:3])
+        dist2 = norm(vec[-3:]-vec2[-3:])
+        #print(dist)
+        if dist1<thresh and dist2<thresh:
+            ans = ans + [i]
+        
+    return ans
+def nearest_predict(vec,mat,pos):
+    vec = vec.astype(int)
+    mat = mat.astype(int)
+    res = np.zeros(mat.shape[0])
+    for i in range(mat.shape[0]):
+        vec2= mat[i,:]
+        dt = np.sum(abs(vec-vec2))
+        res[i]=dt
+    # find top answer's indices in mat
+    ans = np.argsort(res)[:10]
+#     for i in ans:
+#         vis_depth(mat[i,:])
+    return np.mean(pos[ans], axis=0), mat[ans[0]]
+
+def find_target(depth, hint):
+    hint = hint[-3:]+hint[:3]
+    cands = closest(vec=hint, mat=hint_sim, thresh=0.1)
+    print("cands",len(cands))
+    if (len(cands)>0):
+        pred, vec = nearest_predict(vec=depth, mat=depth_sim[cands], pos=pos_sim[cands])
+        pred = pred.tolist()
+        pred = pred[-3:]+pred[:3]
+        return pred
+    print("no solution!")
+    return hint
+
 
 if __name__ == '__main__':
 
     # data_name = sys.argv[1]
-    depth_sim = np.load('depth_sim_bg.npy')
-    pos_sim = np.load('expert.npy')
-    finder = Finder(depth_sim, pos_sim)
+    sim_dir = './config'
+    depth_sim = np.load(os.path.join(sim_dir,'depth_sim_bg.npy'))
+    hint_sim = np.load(os.path.join(sim_dir,'handles.npy'))[:,-6:]
+    pos_sim = np.load(os.path.join(sim_dir,'handles-flat.npy'))
+    print("loaded",depth_sim.shape, pos_sim.shape, hint_sim.shape)
+
     
 
     global have_current_pos; have_current_pos = False
@@ -111,16 +126,11 @@ if __name__ == '__main__':
             have_im = False
             # have target_feat
             vec = depth_feature(im)
-            target_pos,ans = finder.get_target(vec)
-            print "pos"
+            print"current_pos", current_pos
+            target_pos = find_target(depth=vec,hint=current_pos.tolist())
+            print "target"
             print target_pos
-            print current_pos
-            #hist = wrinkle2.xhist(im)
-            #goal = goals[0]
-            #target_feat = feat[goal,:]
-            #hist = np.array(target_feat) - np.array(hist)
-            #motion = model.predict(hist.reshape((1,-1))).ravel()
-            motion = target_pos - current_pos
+            motion = np.array(target_pos) - np.array(current_pos)
             motion = validate_motion(motion)
             vel.data = motion
             print "motion", motion
