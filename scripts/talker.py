@@ -88,12 +88,13 @@ def find_target(depth, hint):
     print("cands",len(cands))
     if (len(cands)>0):
         pred, vec = nearest_predict(vec=depth, mat=depth_sim[cands], pos=pos_sim[cands])
+        #vis_depth(vec)
         pred = pred.tolist()
         pred = pred[-3:]+pred[:3]
         return pred
     print("no solution!")
+    hint = hint[-3:]+hint[:3]
     return hint
-
 
 if __name__ == '__main__':
 
