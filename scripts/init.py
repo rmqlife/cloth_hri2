@@ -20,7 +20,7 @@ def validate_motion(motion):
 	return motion
 
 if __name__ == '__main__':
-	data_name = 'robot_pos.npy'
+	data_name = 'config/robot_pos.npy'
 	pos = np.load(data_name)
 
 	init_pos = pos[1]
