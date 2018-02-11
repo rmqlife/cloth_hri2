@@ -9,6 +9,20 @@ def vis_depth(vec):
     target_size = (64,64)
     plt.imshow(vec.reshape(target_size)),plt.show()
 
+def nearest_predict_prev(vec,mat,pos):
+    vec = vec.astype('float')
+    mat = mat.astype('float')
+    res = np.zeros(mat.shape[0])
+    for i in range(mat.shape[0]):
+        vec2 = mat[i,:]
+        diff = abs(vec-vec2)
+        diff = diff[int(len(diff)*0.5):]
+        dt = np.sum(diff)
+        #dt = np.sum(abs(vec-vec2))
+        res[i]=dt
+    # find top answer's indices in mat
+    ans = np.argsort(res)[:20]
+    return np.mean(pos[ans], axis=0), mat[ans[0]]
     
 def nearest_predict(vec,mat,pos):
     vec = vec.astype(int)

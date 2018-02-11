@@ -89,14 +89,27 @@ def nearest_predict(vec,mat,pos):
     # find top answer's indices in mat
     return pos[ans], mat[ans]
 
-
+def nearest_predict_prev(vec,mat,pos):
+    vec = vec.astype('float')
+    mat = mat.astype('float')
+    res = np.zeros(mat.shape[0])
+    for i in range(mat.shape[0]):
+        vec2 = mat[i,:]
+        diff = abs(vec-vec2)
+        diff = diff[int(len(diff)*0.5):]
+        dt = np.sum(diff)
+        #dt = np.sum(abs(vec-vec2))
+        res[i]=dt
+    # find top answer's indices in mat
+    ans = np.argsort(res)[:20]
+    return np.mean(pos[ans], axis=0), mat[ans[0]]
 
 def find_target(depth, hint):
     hint = hint[-3:]+hint[:3]
     cands = closest(vec=hint, mat=hint_sim, thresh=0.1)
     print("cands",len(cands))
     if (len(cands)>0):
-        pred, vec = nearest_predict(vec=depth, mat=depth_sim[cands], pos=pos_sim[cands])
+        pred, vec = nearest_predict_prev(vec=depth, mat=depth_sim[cands], pos=pos_sim[cands])
         pred = pred.tolist()
         pred = pred[-3:]+pred[:3]
         return pred
