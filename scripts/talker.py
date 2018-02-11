@@ -68,33 +68,42 @@ def closest(vec, mat,thresh):
             ans = ans + [i]
 
     return ans
+
 def nearest_predict(vec,mat,pos):
-    vec = vec.astype(int)
-    mat = mat.astype(int)
-    res = np.zeros(mat.shape[0])
+    vec = vec.astype(float)
+    mat = mat.astype(float)    
+    min_val = sum(vec)
+    ans = 0
+    
     for i in range(mat.shape[0]):
-        vec2= mat[i,:]
-        dt = np.sum(abs(vec-vec2))
-        res[i]=dt
+        vec2 = mat[i,:]
+        diff = abs(vec-vec2)
+        # compute only the downward part
+        diff = diff[int(len(diff)*0.5):]
+        dt = np.sum(diff)
+        #dt = np.sum(abs(vec-vec2))
+        if dt<min_val:
+            min_val=dt
+            ans = i
+    # vis_depth(mat[ans])
     # find top answer's indices in mat
-    ans = np.argsort(res)[:10]
-#     for i in ans:
-#         vis_depth(mat[i,:])
-    return np.mean(pos[ans], axis=0), mat[ans[0]]
+    return pos[ans], mat[ans]
+
+
 
 def find_target(depth, hint):
     hint = hint[-3:]+hint[:3]
-    cands = closest(vec=hint, mat=hint_sim, thresh=0.5)
+    cands = closest(vec=hint, mat=hint_sim, thresh=0.1)
     print("cands",len(cands))
     if (len(cands)>0):
         pred, vec = nearest_predict(vec=depth, mat=depth_sim[cands], pos=pos_sim[cands])
-        #vis_depth(vec)
         pred = pred.tolist()
         pred = pred[-3:]+pred[:3]
         return pred
     print("no solution!")
     hint = hint[-3:]+hint[:3]
     return hint
+
 
 if __name__ == '__main__':
 
