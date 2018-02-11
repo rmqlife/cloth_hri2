@@ -24,7 +24,7 @@ def process_depth(msg):
 def depth_feature(im, target_size=(64,64)):
     d = cv2.resize(im, target_size)
     return d.reshape(-1,)
-    
+
 def process_pos(msg):
     global have_current_pos; have_current_pos = True
     global current_pos; current_pos = np.array(msg.data)
@@ -32,7 +32,7 @@ def process_pos(msg):
 
 def validate_motion(motion):
     print 'validate', max(abs(motion))
-    toleration = 0.04
+    toleration = 0.03
     if max(abs(motion))>toleration:
         print "bad"
         motion = motion*toleration/max(abs(motion))
@@ -66,7 +66,7 @@ def closest(vec, mat,thresh):
         #print(dist)
         if dist1<thresh and dist2<thresh:
             ans = ans + [i]
-        
+
     return ans
 def nearest_predict(vec,mat,pos):
     vec = vec.astype(int)
@@ -84,7 +84,7 @@ def nearest_predict(vec,mat,pos):
 
 def find_target(depth, hint):
     hint = hint[-3:]+hint[:3]
-    cands = closest(vec=hint, mat=hint_sim, thresh=0.1)
+    cands = closest(vec=hint, mat=hint_sim, thresh=0.5)
     print("cands",len(cands))
     if (len(cands)>0):
         pred, vec = nearest_predict(vec=depth, mat=depth_sim[cands], pos=pos_sim[cands])
@@ -102,10 +102,10 @@ if __name__ == '__main__':
     sim_dir = './config'
     depth_sim = np.load(os.path.join(sim_dir,'depth_sim_bg.npy'))
     hint_sim = np.load(os.path.join(sim_dir,'handles.npy'))[:,-6:]
-    pos_sim = np.load(os.path.join(sim_dir,'handles-flat.npy'))
+    pos_sim = np.load(os.path.join(sim_dir,'handles-arc.npy'))
     print("loaded",depth_sim.shape, pos_sim.shape, hint_sim.shape)
 
-    
+
 
     global have_current_pos; have_current_pos = False
     global have_im; have_im = False
@@ -115,15 +115,15 @@ if __name__ == '__main__':
 
     rospy.Subscriber('/yumi/ikSloverVel_controller/ee_cart_position', Float64MultiArray , process_pos, queue_size = 2)
     rospy.Subscriber('/camera/image/registered_depth__611205001943',Image, process_depth, queue_size=2)
-    rospy.sleep(1)    
+    rospy.sleep(1)
 
     rospy.init_node('talker', anonymous=True)
     rate = rospy.Rate(10) # 10hz
-    
+
     vel = Float64MultiArray()
     vel.data = np.zeros(6)
     while not rospy.is_shutdown():
-        if have_im: 
+        if have_im:
             have_im = False
             # have target_feat
             vec = depth_feature(im)
@@ -137,7 +137,7 @@ if __name__ == '__main__':
             print "motion", motion
             pub.publish(vel)
 
-        else: 
+        else:
             print 'idle state'
             vel.data = np.zeros(6)
             pub.publish(vel)
