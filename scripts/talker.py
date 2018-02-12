@@ -109,7 +109,7 @@ def find_target(depth, hint):
     cands = closest(vec=hint, mat=hint_sim, thresh=0.1)
     print("cands",len(cands))
     if (len(cands)>0):
-        pred, vec = nearest_predict_prev(vec=depth, mat=depth_sim[cands], pos=pos_sim[cands])
+        pred, vec = nearest_predict(vec=depth, mat=depth_sim[cands], pos=pos_sim[cands])
         pred = pred.tolist()
         pred = pred[-3:]+pred[:3]
         return pred
