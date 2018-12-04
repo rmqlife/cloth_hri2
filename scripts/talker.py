@@ -2,7 +2,7 @@
 # Software License Agreement (BSD License)
 import sys
 import rospy
-from std_msgs.msg import String, Float64MultiArray
+from std_msgs.msg import String, Float64MultiArray, Int16
 from sensor_msgs.msg import Image
 import numpy as np
 from cv_bridge import CvBridge
@@ -31,6 +31,10 @@ def process_pos(msg):
     global have_current_pos; have_current_pos = True
     global current_pos; current_pos = np.array(msg.data)
 
+def process_task_id(msg):
+    global task_id;
+    task_id = msg.data
+    print "task is changed to "+str(task_id)
 
 def validate_motion(motion):
     print 'validate', max(abs(motion))
@@ -136,7 +140,7 @@ if __name__ == '__main__':
     for i in range(len(pos_sim)):
         print(len(pos_sim[i]))
 
-    task_id = 0
+    global task_id; task_id = 0
 
     global have_current_pos; have_current_pos = False
     global have_im; have_im = False
@@ -146,6 +150,7 @@ if __name__ == '__main__':
 
     rospy.Subscriber('/yumi/ikSloverVel_controller/ee_cart_position', Float64MultiArray , process_pos, queue_size = 2)
     rospy.Subscriber('/camera/image/registered_depth__611205001943',Image, process_depth, queue_size=2)
+    rospy.Subscriber('/task_id',Int16, process_task_id, queue_size=2)
     rospy.sleep(1)
 
     rospy.init_node('talker', anonymous=True)
@@ -160,6 +165,7 @@ if __name__ == '__main__':
                 # have target_feat
                 vec = depth_feature(im)
                 print"current_pos", current_pos
+                print "task:",task_id
                 target_pos = find_target(depth=vec,hint=current_pos.tolist(), task_id=task_id)
                 print "target"
                 print target_pos
