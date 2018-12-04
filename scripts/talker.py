@@ -160,7 +160,7 @@ if __name__ == '__main__':
                 # have target_feat
                 vec = depth_feature(im)
                 print"current_pos", current_pos
-                target_pos = find_target(depth=vec,hint=current_pos.tolist(), task_id)
+                target_pos = find_target(depth=vec,hint=current_pos.tolist(), task_id=task_id)
                 print "target"
                 print target_pos
                 motion = np.array(target_pos) - np.array(current_pos)
@@ -176,6 +176,6 @@ if __name__ == '__main__':
             rate.sleep()
 
         except KeyboardInterrupt:
-			print "except catched, task changed"
-            task_id = (task_id+1)%3
+		print "except catched, task changed"
+            	task_id = (task_id+1)%3
             
