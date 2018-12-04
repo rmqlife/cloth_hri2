@@ -176,6 +176,6 @@ if __name__ == '__main__':
             rate.sleep()
 
         except KeyboardInterrupt:
-		print "except catched, task changed"
-            	task_id = (task_id+1)%3
+        	print "except catched, task changed"
+        	task_id = (task_id+1)%3
             
