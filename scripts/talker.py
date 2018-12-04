@@ -13,6 +13,8 @@ from predict import *
 from util import *
 
 
+def process_depth(msg):
+    bridge = CvBridge()
 
 
 def process_depth(msg):
@@ -104,12 +106,12 @@ def nearest_predict_prev(vec,mat,pos):
     ans = np.argsort(res)[:20]
     return np.mean(pos[ans], axis=0), mat[ans[0]]
 
-def find_target(depth, hint):
+def find_target(depth, hint, task_id):
     hint = hint[-3:]+hint[:3]
     cands = closest(vec=hint, mat=hint_sim, thresh=0.1)
     print("cands",len(cands))
     if (len(cands)>0):
-        pred, vec = nearest_predict(vec=depth, mat=depth_sim[cands], pos=pos_sim[cands])
+        pred, vec = nearest_predict(vec=depth, mat=depth_sim[cands], pos=pos_sim[task_id][cands])
         pred = pred.tolist()
         pred = pred[-3:]+pred[:3]
         return pred
@@ -124,10 +126,17 @@ if __name__ == '__main__':
     sim_dir = './config'
     depth_sim = np.load(os.path.join(sim_dir,'depth_sim_bg.npy'))
     hint_sim = np.load(os.path.join(sim_dir,'handles.npy'))[:,-6:]
-    pos_sim = np.load(os.path.join(sim_dir,'handles-arc.npy'))
-    print("loaded",depth_sim.shape, pos_sim.shape, hint_sim.shape)
 
+    pos_sim = list()
+    pos_sim.append(np.load(os.path.join(sim_dir,'handles-arc.npy')))
+    pos_sim.append(np.load(os.path.join(sim_dir,'handles-flat.npy')))
+    pos_sim.append(np.load(os.path.join(sim_dir, 'handles-twist.npy')))
 
+    print("loaded", depth_sim.shape, len(pos_sim), hint_sim.shape)
+    for i in range(len(pos_sim)):
+        print(len(pos_sim[i]))
+
+    task_id = 0
 
     global have_current_pos; have_current_pos = False
     global have_im; have_im = False
@@ -145,22 +154,28 @@ if __name__ == '__main__':
     vel = Float64MultiArray()
     vel.data = np.zeros(6)
     while not rospy.is_shutdown():
-        if have_im:
-            have_im = False
-            # have target_feat
-            vec = depth_feature(im)
-            print"current_pos", current_pos
-            target_pos = find_target(depth=vec,hint=current_pos.tolist())
-            print "target"
-            print target_pos
-            motion = np.array(target_pos) - np.array(current_pos)
-            motion = validate_motion(motion)
-            vel.data = motion
-            print "motion", motion
-            pub.publish(vel)
+        try:
+            if have_im:
+                have_im = False
+                # have target_feat
+                vec = depth_feature(im)
+                print"current_pos", current_pos
+                target_pos = find_target(depth=vec,hint=current_pos.tolist(), task_id)
+                print "target"
+                print target_pos
+                motion = np.array(target_pos) - np.array(current_pos)
+                motion = validate_motion(motion)
+                vel.data = motion
+                print "motion", motion
+                pub.publish(vel)
 
-        else:
-            print 'idle state'
-            vel.data = np.zeros(6)
-            pub.publish(vel)
-        rate.sleep()
+            else:
+                print 'idle state'
+                vel.data = np.zeros(6)
+                pub.publish(vel)
+            rate.sleep()
+
+        except KeyboardInterrupt:
+			print "except catched, task changed"
+            task_id = (task_id+1)%3
+            
